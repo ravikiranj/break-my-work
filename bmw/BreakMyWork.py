@@ -2,7 +2,7 @@
 
 import sys
 try:
-    from gi.repository import Gtk, Pango
+    from gi.repository import Gtk, Pango, Gdk
 except:
     print "Could not GTK3 libraries"
     sys.exit(1)
@@ -10,15 +10,15 @@ except:
 class UI:
     def __init__(self):
         self.noteBook = Gtk.Notebook()
-        pageStrs = ["Timer", "Exercise"]
+        pageStrs = ["Timer", "Exercises"]
         for index in range(len(pageStrs)):
             tabLabel = Gtk.Label(pageStrs[index])
             tabGrid = Gtk.Grid()
             #Add radio button to the grid
             if(pageStrs[index] == "Timer"):
                 self.buildTimerTabUI(tabGrid)
-            else:
-                self.addLabelToGrid(tabGrid, pageStrs[index])
+            elif(pageStrs[index] == "Exercises"):
+                self.buildExerciseTabUI(tabGrid)
                 
             self.noteBook.append_page(tabGrid, tabLabel)
         
@@ -37,49 +37,35 @@ class UI:
         #Short Break Action Grid
         self.shortBreakActionFrame = Gtk.Frame()
         self.shortBreakActionFrame.set_border_width(5)
-        self.setMargin(self.shortBreakActionFrame, "10 15 10 20")
+        self.setMargin(self.shortBreakActionFrame, "10 0 10 10")
         self.shortBreakActionGrid = Gtk.Grid()
         self.shortBreakActionGrid.set_border_width(10)
         self.shortBreakActionFrame.add(self.shortBreakActionGrid)
         
-        #Long Break Settings Grid
-        self.longBreakSettingsFrame = Gtk.Frame()
-        self.longBreakSettingsFrame.set_border_width(5)
-        self.setMargin(self.longBreakSettingsFrame, "20 0 10 10")
-        self.longBreakSettingsGrid = Gtk.Grid()
-        self.longBreakSettingsGrid.set_border_width(10)
-        self.longBreakSettingsFrame.add(self.longBreakSettingsGrid)
-        
-        #Long Break Action Grid
-        self.longBreakActionFrame = Gtk.Frame()
-        self.longBreakActionFrame.set_border_width(5)
-        self.setMargin(self.longBreakActionFrame, "20 15 10 20")
-        self.longBreakActionGrid = Gtk.Grid()
-        self.longBreakActionGrid.set_border_width(10)
-        self.longBreakActionFrame.add(self.longBreakActionGrid)
+        #Save Changes Grid
+        self.saveChangesGrid = Gtk.Grid()
+        self.saveChangesGrid.set_border_width(10)
         
         #add them to tabGrid
         tabGrid.add(self.shortBreakSettingsFrame)
-        tabGrid.attach_next_to(self.shortBreakActionFrame, self.shortBreakSettingsFrame, Gtk.PositionType.RIGHT, 1, 1)
-        tabGrid.attach_next_to(self.longBreakSettingsFrame, self.shortBreakSettingsFrame, Gtk.PositionType.BOTTOM, 1, 1)
-        tabGrid.attach_next_to(self.longBreakActionFrame, self.longBreakSettingsFrame, Gtk.PositionType.RIGHT, 1, 1)
+        tabGrid.attach_next_to(self.shortBreakActionFrame, self.shortBreakSettingsFrame, Gtk.PositionType.BOTTOM, 1, 1)
+        tabGrid.attach_next_to(self.saveChangesGrid, self.shortBreakActionFrame, Gtk.PositionType.BOTTOM, 2, 1)
         
         #build short and long break settings UI
         self.buildShortBreakSettingsUI(self.shortBreakSettingsGrid)
-        self.buildLongBreakSettingsUI(self.longBreakSettingsGrid)
         self.buildShortBreakActionUI(self.shortBreakActionGrid)
-        self.buildLongBreakActionUI(self.longBreakActionGrid)
+        self.buildSaveChangesUI(self.saveChangesGrid)
 
     def buildShortBreakSettingsUI(self, tabGrid):
         #short break label
-        self.shortBreakLabel = Gtk.Label('Short Breaks')
+        self.shortBreakLabel = Gtk.Label('Break Intervals')
         self.shortBreakLabel.modify_font(self.getFont("heading"))
         self.shortBreakLabel.set_alignment(0, 0.5)
         self.setMargin(self.shortBreakLabel, "10 10 10 10");
         tabGrid.add(self.shortBreakLabel)
         
         #short break enable/disable CheckBox
-        self.shortBreakEnableBtn = Gtk.CheckButton("Enable Short Breaks")
+        self.shortBreakEnableBtn = Gtk.CheckButton("Enable Breaks")
         self.shortBreakEnableBtn.set_active(True)
         self.shortBreakEnableBtn.connect("toggled", self.toggleShortBreaks)
         self.shortBreakEnableBtn.set_margin_left(10)
@@ -134,6 +120,13 @@ class UI:
         self.shortThirtyBtn.connect("toggled", self.changeShortBreakTimer, "short30");
         self.shortTimerChoiceBox.pack_start(self.shortThirtyBtn, True, True, 0)
         
+        #short break 60 mins
+        self.shortSixtyStr = "Once every 60 mins"
+        self.shortSixtyBtn = Gtk.RadioButton.new_with_label_from_widget(self.shortFifteenBtn, self.shortSixtyStr);
+        self.shortSixtyBtn.set_margin_top(5)
+        self.shortSixtyBtn.connect("toggled", self.changeShortBreakTimer, "short60");
+        self.shortTimerChoiceBox.pack_start(self.shortSixtyBtn, True, True, 0)
+        
         #short break custom mins radio button
         self.shortCustomBtn = Gtk.RadioButton.new_with_label_from_widget(self.shortFifteenBtn, "Custom");
         self.shortCustomBtn.set_margin_top(5)
@@ -167,7 +160,7 @@ class UI:
         
     def buildShortBreakActionUI(self, tabGrid):
         #short break action label
-        self.shortBreakActionLabel = Gtk.Label('Short Breaks Action')
+        self.shortBreakActionLabel = Gtk.Label('Break Action')
         self.shortBreakActionLabel.modify_font(self.getFont("heading"))
         self.shortBreakActionLabel.set_alignment(0, 0.5)
         self.setMargin(self.shortBreakActionLabel, "10 10 10 10");
@@ -176,7 +169,7 @@ class UI:
         #short break action vBox to hold choices
         self.shortActionChoiceBox = Gtk.Box()
         self.shortActionChoiceBox.set_orientation(Gtk.Orientation.VERTICAL)
-        self.setMargin(self.shortActionChoiceBox, "10 0 10 10")
+        self.setMargin(self.shortActionChoiceBox, "0 0 10 10")
         tabGrid.attach_next_to(self.shortActionChoiceBox, self.shortBreakActionLabel, Gtk.PositionType.BOTTOM, 1, 1)
         
         #short break action - tooltip reminder
@@ -200,139 +193,42 @@ class UI:
         self.shortBreakActionDisableInpBtn.set_margin_top(5)
         self.shortActionChoiceBox.pack_start(self.shortBreakActionDisableInpBtn, True, True, 0)
         
-    def buildLongBreakSettingsUI(self, tabGrid):
-        #long break label
-        self.longBreakLabel = Gtk.Label('Long Breaks')
-        self.longBreakLabel.modify_font(self.getFont("heading"))
-        self.longBreakLabel.set_alignment(0, 0.5)
-        self.setMargin(self.longBreakLabel, "10 10 10 10");
-        tabGrid.add(self.longBreakLabel)
+    def buildSaveChangesUI(self, tabGrid):
+        #add ok, apply, cancel buttons
+        self.saveChangesBox = Gtk.Box()
+        self.saveChangesBox.set_orientation(Gtk.Orientation.HORIZONTAL)
+        tabGrid.add(self.saveChangesBox)
         
-        #long break enable/disable CheckBox
-        self.longBreakEnableBtn = Gtk.CheckButton("Enable Long Breaks")
-        self.longBreakEnableBtn.set_active(True)
-        self.longBreakEnableBtn.connect("toggled", self.toggleLongBreaks)
-        self.longBreakEnableBtn.set_margin_left(10)
-        tabGrid.attach_next_to(self.longBreakEnableBtn, self.longBreakLabel, Gtk.PositionType.BOTTOM, 1, 1);
+        #OK Button
+        self.timerOKBtn = Gtk.Button()
+        self.timerOKBtn.set_label("Ok")
+        self.timerOKBtn.set_size_request(90, 30)
+        self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok")
+        self.saveChangesBox.pack_start(self.timerOKBtn, True, True, 0)
         
-        #long break vBox to hold timer choices
-        self.longTimerChoiceBox = Gtk.Box()
-        self.longTimerChoiceBox.set_orientation(Gtk.Orientation.VERTICAL)
-        self.setMargin(self.longTimerChoiceBox, "10 0 10 30")
-        tabGrid.attach_next_to(self.longTimerChoiceBox, self.longBreakEnableBtn, Gtk.PositionType.BOTTOM, 1, 1)
+        #Apply Button
+        self.timerApplyBtn = Gtk.Button()
+        self.timerApplyBtn.set_label("Apply")
+        self.timerApplyBtn.set_size_request(90, 30)
+        self.timerApplyBtn.set_margin_left(10)
+        self.timerApplyBtn.set_sensitive(False)
+        self.timerApplyBtn.connect("clicked", self.saveChangesHandler, "Apply")
+        self.saveChangesBox.pack_start(self.timerApplyBtn, True, True, 0)
         
-        #long break duration hbox
-        self.longBreakDurationBox = Gtk.Box()
-        self.longBreakDurationBox.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self.setMargin(self.longBreakDurationBox, "0 0 5 0")
-        self.longTimerChoiceBox.pack_start(self.longBreakDurationBox, True, True, 0)
-        
-        #long break Duration label        
-        longBreakDurationLabel = Gtk.Label("Duration")
-        self.longBreakDurationBox.pack_start(longBreakDurationLabel, True, True, 0)
-        
-        #value, lower, upper, step_inc, page_inc, page_size
-        self.longBreakDurationAdjustment = Gtk.Adjustment(5, 1, 20, 1, 2, 0)
-        #long break custom mins spinner button
-        self.longBreakDurationBtn = Gtk.SpinButton()
-        self.longBreakDurationBtn.set_adjustment(self.longBreakDurationAdjustment)
-        self.longBreakDurationBtn.set_numeric(True)
-        self.longBreakDurationBtn.set_digits(0)
-        self.longBreakDurationBtn.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
-        self.longBreakDurationBtn.set_sensitive(True)
-        self.longBreakDurationBtn.set_max_length(2)
-        self.longBreakDurationBtn.set_margin_left(5)
-        self.longBreakDurationAdjustment.connect("value_changed", self.updateLongBreakDuration)
-        self.longBreakDurationBox.pack_start(self.longBreakDurationBtn, True, True, 0)
-        
-        #long break Duration 'minutes' label        
-        longBreakDurationMinsLabel = Gtk.Label("minutes")
-        longBreakDurationMinsLabel.set_margin_left(2)
-        self.longBreakDurationBox.pack_start(longBreakDurationMinsLabel, True, True, 0)
-        
-        #long break 1 hour
-        self.longOneHourStr = "Once every 1 hour"
-        self.longOneHourBtn = Gtk.RadioButton.new_with_label_from_widget(None, self.longOneHourStr);
-        self.longOneHourBtn.set_margin_top(5)
-        self.longOneHourBtn.connect("toggled", self.changeLongBreakTimer, "long1hr");
-        self.longTimerChoiceBox.pack_start(self.longOneHourBtn, True, True, 0)
-        
-        #long break 2 hours
-        self.longTwoHourStr = "Once every 2 hours"
-        self.longTwoHourBtn = Gtk.RadioButton.new_with_label_from_widget(self.longOneHourBtn, self.longTwoHourStr);
-        self.longTwoHourBtn.set_margin_top(5)
-        self.longTwoHourBtn.connect("toggled", self.changeLongBreakTimer, "long2hr");
-        self.longTimerChoiceBox.pack_start(self.longTwoHourBtn, True, True, 0)
-        
-        #long break custom mins radio button
-        self.longCustomBtn = Gtk.RadioButton.new_with_label_from_widget(self.longOneHourBtn, "Custom");
-        self.longCustomBtn.set_margin_top(5)
-        self.longCustomBtn.connect("toggled", self.changeLongBreakTimer, "longCustom");
-        
-        #long break HBOX to hold custom mins data
-        self.longCustomHBox = Gtk.Box()
-        self.longCustomHBox.set_orientation(Gtk.Orientation.HORIZONTAL)
-        self.longTimerChoiceBox.pack_start(self.longCustomHBox, True, True, 0)
-        self.longCustomHBox.pack_start(self.longCustomBtn, True, True, 0)
-        
-        #value, lower, upper, step_inc, page_inc, page_size
-        self.longBreakCustomMinsAdjustment = Gtk.Adjustment(1, 1, 12, 1, 2, 0)
-        #long break custom mins spinner button
-        self.longBreakCustomMinsBtn = Gtk.SpinButton()
-        self.longBreakCustomMinsBtn.set_adjustment(self.longBreakCustomMinsAdjustment)
-        self.longBreakCustomMinsBtn.set_numeric(True)
-        self.longBreakCustomMinsBtn.set_digits(0)
-        self.longBreakCustomMinsBtn.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
-        self.longBreakCustomMinsBtn.set_margin_left(5)
-        self.longBreakCustomMinsBtn.set_max_length(2)
-        self.longBreakCustomMinsBtn.set_sensitive(False)
-        self.longBreakCustomMinsBtn.set_wrap(True)
-        self.longBreakCustomMinsAdjustment.connect("value_changed", self.updateCustomLongBreak)
-        self.longCustomHBox.pack_start(self.longBreakCustomMinsBtn, True, True, 0)
-        
-        #long break custom hours label
-        longCustomLabel = Gtk.Label("hour(s)")
-        longCustomLabel.set_margin_left(5)
-        self.longCustomHBox.pack_start(longCustomLabel, True, True, 0)
-        
-    def buildLongBreakActionUI(self, tabGrid):
-        #long break action label
-        self.longBreakActionLabel = Gtk.Label('Long Breaks Action')
-        self.longBreakActionLabel.modify_font(self.getFont("heading"))
-        self.longBreakActionLabel.set_alignment(0, 0.5)
-        self.setMargin(self.longBreakActionLabel, "10 10 10 10");
-        tabGrid.add(self.longBreakActionLabel)
-        
-        #long break action vBox to hold choices
-        self.longActionChoiceBox = Gtk.Box()
-        self.longActionChoiceBox.set_orientation(Gtk.Orientation.VERTICAL)
-        self.setMargin(self.longActionChoiceBox, "10 0 10 10")
-        tabGrid.attach_next_to(self.longActionChoiceBox, self.longBreakActionLabel, Gtk.PositionType.BOTTOM, 1, 1)
-        
-        #long break action - tooltip reminder
-        self.longBreakActionToolTipStr = "Show Tool Tip Reminder (gentle)"
-        self.longBreakActionToolTipBtn = Gtk.RadioButton.new_with_label_from_widget(None, self.longBreakActionToolTipStr);
-        self.longBreakActionToolTipBtn.connect("toggled", self.updateLongBreakAction, "longBreakToolTip")
-        self.longBreakActionToolTipBtn.set_margin_top(5)
-        self.longActionChoiceBox.pack_start(self.longBreakActionToolTipBtn, True, True, 0)
-        
-        #long break action - pop up reminder
-        self.longBreakActionPopUpStr = "Show Pop Up Reminder (invasive)"
-        self.longBreakActionPopUpBtn = Gtk.RadioButton.new_with_label_from_widget(self.longBreakActionToolTipBtn, self.longBreakActionPopUpStr);
-        self.longBreakActionPopUpBtn.connect("toggled", self.updateLongBreakAction, "longBreakPopUp")
-        self.longBreakActionPopUpBtn.set_margin_top(5)
-        self.longActionChoiceBox.pack_start(self.longBreakActionPopUpBtn, True, True, 0)
-        
-        #long break action - lock keyboard and mouse
-        self.longBreakActionDisableInpStr = "Disable Keyboard and Mouse (forces a break)"
-        self.longBreakActionDisableInpBtn = Gtk.RadioButton.new_with_label_from_widget(self.longBreakActionToolTipBtn, self.longBreakActionDisableInpStr);
-        self.longBreakActionDisableInpBtn.connect("toggled", self.updateLongBreakAction, "longBreakDisableInp")
-        self.longBreakActionDisableInpBtn.set_margin_top(5)
-        self.longActionChoiceBox.pack_start(self.longBreakActionDisableInpBtn, True, True, 0)
+        #Cancel Button
+        self.timerCancelBtn = Gtk.Button()
+        self.timerCancelBtn.set_label("Cancel")
+        self.timerCancelBtn.set_size_request(90, 30)
+        self.timerCancelBtn.set_margin_left(10)
+        self.timerCancelBtn.set_sensitive(False)
+        self.timerCancelBtn.connect("clicked", self.saveChangesHandler, "Cancel")
+        self.saveChangesBox.pack_start(self.timerCancelBtn, True, True, 0)
         
     def getFont(self, textType):
         if(textType == "heading"):
             return Pango.FontDescription("14")
+        elif(textType == "disclaimer"):
+            return Pango.FontDescription("#ff0000 12")
         
         #default (normal)
         return Pango.FontDescription("12")
@@ -356,19 +252,16 @@ class UI:
         if(name == "custom"):
             currVal = self.shortBreakCustomMinsBtn.get_value_as_int()
             print "Activate Short Break Timer Once every ", currVal, " mins (custom)"
+            self.enableApplyCancelBtns()
         elif(name == "short15"):
             print "Activate Short Break Timer Once every 15 mins"
+            self.enableApplyCancelBtns()
         elif(name == "short30"):
             print "Activate Short Break Timer Once every 30 mins"
-            
-    def updateLongTimer(self, name):
-        if(name == "custom"):
-            currVal = self.longBreakCustomMinsBtn.get_value_as_int()
-            print "Activate Long Break Once every ", currVal, " hour(s) (custom)"
-        elif(name == "long1hr"):
-            print "Activate Long Break Once Every 1 Hour"
-        elif(name == "long2hr"):
-            print "Activate Long Break Once Every 2 Hours"
+            self.enableApplyCancelBtns()
+        elif(name == "short60"):
+            print "Activate Short Break Timer Once every 60 mins"
+            self.enableApplyCancelBtns()
             
     def toggleShortBreaks(self, btn):        
         if(btn.get_active()):
@@ -382,23 +275,6 @@ class UI:
             self.shortActionChoiceBox.set_sensitive(False)
             print "Disable short breaks"
             
-    def toggleLongBreaks(self, btn):        
-        if(btn.get_active()):
-            #enable long breaks
-            self.longTimerChoiceBox.set_sensitive(True)
-            self.longActionChoiceBox.set_sensitive(True)
-            print "Enable long breaks"
-        else:
-            #disable long breaks
-            self.longTimerChoiceBox.set_sensitive(False)
-            self.longActionChoiceBox.set_sensitive(False)
-            print "Disable long breaks"
-            
-    def addLabelToGrid(self, tabGrid, labelName):
-        containerLabel = Gtk.Label(labelName+" is inside tab")
-        containerLabel.show()
-        tabGrid.add(containerLabel)
-        
     def changeShortBreakTimer(self, btn, name):
         state = 0
         if(btn.get_active()):
@@ -409,6 +285,9 @@ class UI:
         elif(name == "short30"):
             if(state == 1):
                 self.updateShortTimer("short30")
+        elif(name == "short60"):
+            if(state == 1):
+                self.updateShortTimer("short60")
         elif(name == "shortCustom"):
             if(state == 1):
                 self.shortBreakCustomMinsBtn.set_sensitive(True)
@@ -416,29 +295,9 @@ class UI:
             else:
                 self.shortBreakCustomMinsBtn.set_sensitive(False)
                 
-    def changeLongBreakTimer(self, btn, name):
-        state = 0
-        if(btn.get_active()):
-            state = 1
-        if(name == "long1hr"):
-            if(state == 1):
-                self.updateLongTimer("long1hr")
-        elif(name == "long2hr"):
-            if(state == 1):
-                self.updateLongTimer("long2hr")
-        elif(name == "longCustom"):
-            if(state == 1):
-                self.longBreakCustomMinsBtn.set_sensitive(True)
-                self.updateLongTimer("custom")
-            else:
-                self.longBreakCustomMinsBtn.set_sensitive(False)
-        
     def updateCustomShortBreak(self, btn):
         self.updateShortTimer("custom")
     
-    def updateCustomLongBreak(self, btn):
-        self.updateLongTimer("custom")
-        
     def updateShortBreakDuration(self, btn):
         currVal = self.shortBreakDurationBtn.get_value_as_int()
         print "Short Break Duration =  ", currVal, " mins"
@@ -451,31 +310,66 @@ class UI:
         if(name == "shortBreakToolTip"):
             if(state == 1):
                 print "Short Break Action - Tool Tip Reminder"
+                self.enableApplyCancelBtns()
         elif(name == "shortBreakPopUp"):
             if(state == 1):
                 print "Short Break Action - Pop Up Reminder"
+                self.enableApplyCancelBtns()
         elif(name == "shortBreakDisableInp"):
             if(state == 1):
                 print "Short Break Action - Disable Input"
+                self.enableApplyCancelBtns()
         
-    def updateLongBreakAction(self, btn, name):
-        state = 0
-        if(btn.get_active()):
-            state = 1
+    def buildExerciseTabUI(self, tabGrid):
+        #Set tab grid border width
+        tabGrid.set_border_width(15)
+        
+        #Scrolled Window
+        self.exerScrollWindow = Gtk.ScrolledWindow()
+        self.exerScrollWindow.set_size_request(620, 470)
+        self.exerScrollWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        tabGrid.add(self.exerScrollWindow)
+        
+        #Image
+        self.exerImage = Gtk.Image()
+        self.exerImagePath = "deskStretches.jpg"
+        self.exerImage.set_from_file(self.exerImagePath)
+        self.exerImageBtn = Gtk.Button()
+        self.exerImageBtn.set_sensitive(False)
+        self.exerImageBtn.add(self.exerImage)
+        self.exerScrollWindow.add_with_viewport(self.exerImageBtn)
+        
+        #Short Break Settings Grid
+        disclaimerStr = "Disclaimer: This tool does not provide medical advice.\nAlways consult your physician before beginning any exercise program." 
+        self.disclaimerLabel = Gtk.Label(disclaimerStr)
+        self.disclaimerLabel.modify_font(self.getFont("disclaimer"))
+        self.setMargin(self.disclaimerLabel, "10 5 5 5")
+        self.disclaimerFrame = Gtk.Frame()
+        self.disclaimerFrame.set_border_width(5)
+        self.disclaimerFrame.add(self.disclaimerLabel)
+        self.setMargin(self.disclaimerFrame, "10 0 0 5")
+        tabGrid.attach_next_to(self.disclaimerFrame, self.exerScrollWindow, Gtk.PositionType.BOTTOM, 1, 1)
+        
+        
+    def saveChangesHandler(self, btn, name):
+        if(name == "Ok"):
+            print "Ok Button"
+            Gtk.main_quit()
+        elif(name == "Apply"):
+            print "Apply Button"
+            print "Changes saved to file"
+            self.disableApplyCancelBtns()
+        elif(name == "Cancel"):
+            print "Cancel Button"
+            Gtk.main_quit()
             
-        if(name == "longBreakToolTip"):
-            if(state == 1):
-                print "Long Break Action - Tool Tip Reminder"
-        elif(name == "longBreakPopUp"):
-            if(state == 1):
-                print "Long Break Action - Pop Up Reminder"
-        elif(name == "longBreakDisableInp"):
-            if(state == 1):
-                print "Long Break Action - Disable Input"
-                
-    def updateLongBreakDuration(self, btn):
-        currVal = self.longBreakDurationBtn.get_value_as_int()
-        print "Long Break Duration =  ", currVal, " mins"
+    def enableApplyCancelBtns(self):
+        self.timerApplyBtn.set_sensitive(True)
+        self.timerCancelBtn.set_sensitive(True)
+        
+    def disableApplyCancelBtns(self):
+        self.timerApplyBtn.set_sensitive(False)
+        self.timerCancelBtn.set_sensitive(False)
             
     def numbify(self, widget):
         def filter_numbers(entry, *args):
@@ -491,7 +385,7 @@ class UI:
 class Builder:
     def __init__(self):
         self.window = Gtk.Window()
-        self.window.set_default_size(400, 400)
+        self.window.set_resizable(False)
         self.window.set_title("Break My Work")
         self.ui = UI()
         self.window.add(self.ui.getNoteBook())
