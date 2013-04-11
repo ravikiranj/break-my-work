@@ -2,27 +2,28 @@
 
 import sys
 try:
-    from gi.repository import Gtk, Pango, Gdk
+    from gi.repository import Gtk, Pango
 except:
     print "Could not GTK3 libraries"
     sys.exit(1)
     
 class UI:
-    def __init__(self):
+    def __init__(self, helper):
         self.noteBook = Gtk.Notebook()
+        self.h = helper
         pageStrs = ["Timer", "Exercises"]
         for index in range(len(pageStrs)):
             tabLabel = Gtk.Label(pageStrs[index])
             tabGrid = Gtk.Grid()
             #Add radio button to the grid
             if(pageStrs[index] == "Timer"):
-                self.buildTimerTabUI(tabGrid)
+                self.buildTimerTabUI(tabGrid, helper)
             elif(pageStrs[index] == "Exercises"):
                 self.buildExerciseTabUI(tabGrid)
                 
             self.noteBook.append_page(tabGrid, tabLabel)
         
-    def buildTimerTabUI(self, tabGrid):
+    def buildTimerTabUI(self, tabGrid, helper):
         #Set tab grid border width
         tabGrid.set_border_width(15)
         
@@ -54,7 +55,7 @@ class UI:
         #build short and long break settings UI
         self.buildShortBreakSettingsUI(self.shortBreakSettingsGrid)
         self.buildShortBreakActionUI(self.shortBreakActionGrid)
-        self.buildSaveChangesUI(self.saveChangesGrid)
+        self.buildSaveChangesUI(self.saveChangesGrid, helper)
 
     def buildShortBreakSettingsUI(self, tabGrid):
         #short break label
@@ -193,7 +194,7 @@ class UI:
         self.shortBreakActionDisableInpBtn.set_margin_top(5)
         self.shortActionChoiceBox.pack_start(self.shortBreakActionDisableInpBtn, True, True, 0)
         
-    def buildSaveChangesUI(self, tabGrid):
+    def buildSaveChangesUI(self, tabGrid, helper):
         #add ok, apply, cancel buttons
         self.saveChangesBox = Gtk.Box()
         self.saveChangesBox.set_orientation(Gtk.Orientation.HORIZONTAL)
@@ -203,7 +204,7 @@ class UI:
         self.timerOKBtn = Gtk.Button()
         self.timerOKBtn.set_label("Ok")
         self.timerOKBtn.set_size_request(90, 30)
-        self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok")
+        self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok", helper)
         self.saveChangesBox.pack_start(self.timerOKBtn, True, True, 0)
         
         #Apply Button
@@ -212,7 +213,7 @@ class UI:
         self.timerApplyBtn.set_size_request(90, 30)
         self.timerApplyBtn.set_margin_left(10)
         self.timerApplyBtn.set_sensitive(False)
-        self.timerApplyBtn.connect("clicked", self.saveChangesHandler, "Apply")
+        self.timerApplyBtn.connect("clicked", self.saveChangesHandler, "Apply", helper)
         self.saveChangesBox.pack_start(self.timerApplyBtn, True, True, 0)
         
         #Cancel Button
@@ -221,7 +222,7 @@ class UI:
         self.timerCancelBtn.set_size_request(90, 30)
         self.timerCancelBtn.set_margin_left(10)
         self.timerCancelBtn.set_sensitive(False)
-        self.timerCancelBtn.connect("clicked", self.saveChangesHandler, "Cancel")
+        self.timerCancelBtn.connect("clicked", self.saveChangesHandler, "Cancel", helper)
         self.saveChangesBox.pack_start(self.timerCancelBtn, True, True, 0)
         
     def getFont(self, textType):
@@ -351,17 +352,17 @@ class UI:
         tabGrid.attach_next_to(self.disclaimerFrame, self.exerScrollWindow, Gtk.PositionType.BOTTOM, 1, 1)
         
         
-    def saveChangesHandler(self, btn, name):
+    def saveChangesHandler(self, btn, name, helper):
         if(name == "Ok"):
             print "Ok Button"
-            Gtk.main_quit()
+            helper.hideOnClose() 
         elif(name == "Apply"):
             print "Apply Button"
             print "Changes saved to file"
             self.disableApplyCancelBtns()
         elif(name == "Cancel"):
             print "Cancel Button"
-            Gtk.main_quit()
+            helper.hideOnClose() 
             
     def enableApplyCancelBtns(self):
         self.timerApplyBtn.set_sensitive(True)
@@ -384,13 +385,58 @@ class UI:
 
 class Builder:
     def __init__(self):
+        #Create Window UI
         self.window = Gtk.Window()
         self.window.set_resizable(False)
         self.window.set_title("Break My Work")
-        self.ui = UI()
+        self.helper = Helper(self)
+        self.ui = UI(self.helper)
         self.window.add(self.ui.getNoteBook())
-        self.window.connect("delete-event", Gtk.main_quit)
+        
+        #Status Icon
+        self.statusIcon = Gtk.StatusIcon()
+        self.statusIcon.set_from_stock(Gtk.STOCK_HOME)
+        self.statusIcon.connect("popup-menu", self.rightClickOnStatus)
+        
+        self.window.connect("destroy", lambda w: Gtk.main_quit())
         self.window.show_all()
+        
+    def rightClickOnStatus(self, icon, button, time):
+        self.menu = Gtk.Menu()
+
+        aboutItem = Gtk.MenuItem()
+        aboutItem.set_label("About")
+        quitItem = Gtk.MenuItem()
+        quitItem.set_label("Quit")
+
+        aboutItem.connect("activate", self.show_about_dialog)
+        quitItem.connect("activate", Gtk.main_quit)
+
+        self.menu.append(aboutItem)
+        self.menu.append(quitItem)
+
+        self.menu.show_all() 
+        
+        def pos(menu, icon):
+                return (Gtk.StatusIcon.position_menu(menu, icon))
+            
+        self.menu.popup(None, None, pos, self.statusicon, button, time) 
+        
+    def show_about_dialog(self, widget):
+        about_dialog = Gtk.AboutDialog()
+
+        about_dialog.set_destroy_with_parent(True)
+        about_dialog.set_name("Break My Work")
+        about_dialog.set_version("1.0")
+        about_dialog.set_authors(["Ravikiran Janardhana"])
+
+        about_dialog.run()
+        about_dialog.destroy()
+        
+    def hideOnClose(self):
+        self.window.hide_on_delete()
+        self.statusIcon.set_tooltip_text('Window is hidden')
+        return True
         
     def getWindow(self):
         return self.window
@@ -398,6 +444,16 @@ class Builder:
     def main(self):
         Gtk.main()
 #end class Builder
+
+class Helper:
+    def __init__(self, builder):
+        self.b = builder
+        
+    def hideOnClose(self):
+        self.b.window.hide_on_delete()
+        self.statusIcon.set_tooltip_text('Window is hidden')
+        return True
+#end class Helper
 
 if __name__ == "__main__":
     b = Builder()
