@@ -16,22 +16,26 @@ except:
     sys.exit(1)
     
 class UI:
-    def __init__(self, helper):
+    def __init__(self, helper, config):
         self.noteBook = Gtk.Notebook()
         self.h = helper
+        self.c = config
+        self.tempConfig = {'duration' : config['duration'], 
+                           'interval' : config['interval'], 
+                           'action' : config['action']}
         pageStrs = ["Timer", "Exercises"]
         for index in range(len(pageStrs)):
             tabLabel = Gtk.Label(pageStrs[index])
             tabGrid = Gtk.Grid()
             #Add radio button to the grid
             if(pageStrs[index] == "Timer"):
-                self.buildTimerTabUI(tabGrid, helper)
+                self.buildTimerTabUI(tabGrid)
             elif(pageStrs[index] == "Exercises"):
                 self.buildExerciseTabUI(tabGrid)
                 
             self.noteBook.append_page(tabGrid, tabLabel)
         
-    def buildTimerTabUI(self, tabGrid, helper):
+    def buildTimerTabUI(self, tabGrid):
         #Set tab grid border width
         tabGrid.set_border_width(15)
         
@@ -63,7 +67,7 @@ class UI:
         #build short and long break settings UI
         self.buildShortBreakSettingsUI(self.shortBreakSettingsGrid)
         self.buildShortBreakActionUI(self.shortBreakActionGrid)
-        self.buildSaveChangesUI(self.saveChangesGrid, helper)
+        self.buildSaveChangesUI(self.saveChangesGrid)
 
     def buildShortBreakSettingsUI(self, tabGrid):
         #short break label
@@ -202,7 +206,7 @@ class UI:
         self.shortBreakActionDisableInpBtn.set_margin_top(5)
         self.shortActionChoiceBox.pack_start(self.shortBreakActionDisableInpBtn, True, True, 0)
         
-    def buildSaveChangesUI(self, tabGrid, helper):
+    def buildSaveChangesUI(self, tabGrid):
         #add ok, apply, cancel buttons
         self.saveChangesBox = Gtk.Box()
         self.saveChangesBox.set_orientation(Gtk.Orientation.HORIZONTAL)
@@ -212,7 +216,7 @@ class UI:
         self.timerOKBtn = Gtk.Button()
         self.timerOKBtn.set_label("Ok")
         self.timerOKBtn.set_size_request(90, 30)
-        self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok", helper)
+        self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok")
         self.saveChangesBox.pack_start(self.timerOKBtn, True, True, 0)
         
         #Apply Button
@@ -221,7 +225,7 @@ class UI:
         self.timerApplyBtn.set_size_request(90, 30)
         self.timerApplyBtn.set_margin_left(10)
         self.timerApplyBtn.set_sensitive(False)
-        self.timerApplyBtn.connect("clicked", self.saveChangesHandler, "Apply", helper)
+        self.timerApplyBtn.connect("clicked", self.saveChangesHandler, "Apply")
         self.saveChangesBox.pack_start(self.timerApplyBtn, True, True, 0)
         
         #Cancel Button
@@ -230,7 +234,7 @@ class UI:
         self.timerCancelBtn.set_size_request(90, 30)
         self.timerCancelBtn.set_margin_left(10)
         self.timerCancelBtn.set_sensitive(False)
-        self.timerCancelBtn.connect("clicked", self.saveChangesHandler, "Cancel", helper)
+        self.timerCancelBtn.connect("clicked", self.saveChangesHandler, "Cancel")
         self.saveChangesBox.pack_start(self.timerCancelBtn, True, True, 0)
         
     def getFont(self, textType):
@@ -258,19 +262,23 @@ class UI:
             raise ValueError("button does not have a label")
             
     def updateShortTimer(self, name):
+        newInterval = -1
         if(name == "custom"):
-            currVal = self.shortBreakCustomMinsBtn.get_value_as_int()
-            print "Activate Short Break Timer Once every ", currVal, " mins (custom)"
+            newInterval = self.shortBreakCustomMinsBtn.get_value_as_int()
             self.enableApplyCancelBtns()
         elif(name == "short15"):
-            print "Activate Short Break Timer Once every 15 mins"
+            newInterval = 15
             self.enableApplyCancelBtns()
         elif(name == "short30"):
-            print "Activate Short Break Timer Once every 30 mins"
+            newInterval = 30
             self.enableApplyCancelBtns()
         elif(name == "short60"):
-            print "Activate Short Break Timer Once every 60 mins"
+            newInterval = 60
             self.enableApplyCancelBtns()
+            
+        if(newInterval != -1):
+            print "Activate Short Break Timer every %d minutes" % (newInterval)
+            self.tempConfig['interval'] = newInterval
             
     def toggleShortBreaks(self, btn):        
         if(btn.get_active()):
@@ -308,26 +316,32 @@ class UI:
         self.updateShortTimer("custom")
     
     def updateShortBreakDuration(self, btn):
-        currVal = self.shortBreakDurationBtn.get_value_as_int()
-        print "Short Break Duration =  ", currVal, " mins"
+        newDuration = self.shortBreakDurationBtn.get_value_as_int()
+        print "Short Break Duration =  ", newDuration, " mins"
+        self.tempConfig['duration'] = newDuration
         
     def updateShortBreakAction(self, btn, name):
+        newAction = ""
         state = 0
         if(btn.get_active()):
             state = 1
             
         if(name == "shortBreakToolTip"):
             if(state == 1):
-                print "Short Break Action - Tool Tip Reminder"
+                newAction = "tooltip"
                 self.enableApplyCancelBtns()
         elif(name == "shortBreakPopUp"):
             if(state == 1):
-                print "Short Break Action - Pop Up Reminder"
+                newAction = "popup"
                 self.enableApplyCancelBtns()
         elif(name == "shortBreakDisableInp"):
             if(state == 1):
-                print "Short Break Action - Disable Input"
+                newAction = "disableinp"
                 self.enableApplyCancelBtns()
+                
+        if(newAction != ""):
+            print "Action changed = %s" % (newAction)
+            self.tempConfig['action'] = newAction
         
     def buildExerciseTabUI(self, tabGrid):
         #Set tab grid border width
@@ -360,18 +374,22 @@ class UI:
         tabGrid.attach_next_to(self.disclaimerFrame, self.exerScrollWindow, Gtk.PositionType.BOTTOM, 1, 1)
         
         
-    def saveChangesHandler(self, btn, name, helper):
+    def saveChangesHandler(self, btn, name):
         if(name == "Ok"):
             print "Ok Button"
-            helper.getBreakScheduler().setNewInterval(5)
-            helper.hideOnClose() 
+            self.h.hideOnClose()
         elif(name == "Apply"):
             print "Apply Button"
+            self.c = self.tempConfig
+            self.h.updateConfig(self.tempConfig)
             print "Changes saved to file"
             self.disableApplyCancelBtns()
         elif(name == "Cancel"):
             print "Cancel Button"
-            helper.hideOnClose() 
+            self.tempConfig = {'duration' : self.c['duration'], 
+                               'interval' : self.c['interval'], 
+                               'action' : self.c['action']}
+            self.h.hideOnClose()
             
     def enableApplyCancelBtns(self):
         self.timerApplyBtn.set_sensitive(True)
@@ -410,8 +428,46 @@ class BreakScheduler(object):
         self.action = newAction
         
     def showBreakMessageUI(self, action):
+        self.breakMessageWindow = Gtk.Window()
+        self.breakMessageWindow.set_position(Gtk.WindowPosition.CENTER)
+        self.breakMessageWindow.set_size_request(350, 120)
+        
+        self.breakBox = Gtk.Box()
+        self.breakBox.set_orientation(Gtk.Orientation.VERTICAL)
+        
+        self.breakReminderText = "Please take a break of %d mins, %d interval, action = %s" % (self.getDuration(), self.getInterval(), self.getAction())
+        self.breakReminderLabel = Gtk.Label(self.breakReminderText)
+        self.breakReminderLabel.modify_font(self.mainWindow.ui.getFont("heading"))
+        
+        self.exerciseBtnText = "Show me some exercises"
+        self.exerciseBtn = Gtk.Button()
+        self.exerciseBtn.set_label(self.exerciseBtnText)
+        self.exerciseBtn.connect("clicked", self.showExerciseTab)
+        
+        self.breakBox.pack_start(self.breakReminderLabel, True, True, 0)
+        self.breakBox.pack_start(self.exerciseBtn, True, True, 0)
+        
+        self.breakMessageWindow.add(self.breakBox)
+        
+        self.breakMessageWindow.set_title("Break My Work - Take a break")
+        self.breakMessageWindow.set_border_width(15)
+        self.breakMessageWindow.show_all()
         print "Action = %s, Interval = %d" % (self.action, self.interval)
-        return True
+        return False
+        
+    def getDuration(self):
+        return self.mainWindow.config['duration']
+    
+    def getInterval(self):
+        return self.mainWindow.config['interval']
+    
+    def getAction(self):
+        return self.mainWindow.config['action']
+                                         
+    def showExerciseTab(self, widget):
+        self.mainWindow.showConfigureWindow()
+        self.mainWindow.ui.getNoteBook().set_current_page(1)
+        self.breakMessageWindow.destroy()
         
     def start(self):
         if not self.isRunning:
@@ -430,8 +486,15 @@ class MainWindowBuilder():
         self.window = Gtk.Window()
         self.window.set_resizable(False)
         self.window.set_title("Break My Work")
+        
+        #setup ui
         self.helper = Helper(self)
-        self.ui = UI(self.helper)
+        
+        #setup config
+        self.config = {'duration' : 5, 'interval' : 10, 'action' : 'popup'}
+        
+        #setup ui
+        self.ui = UI(self.helper, self.config)
         self.window.add(self.ui.getNoteBook())
         self.window.set_position(Gtk.WindowPosition.CENTER)
         
@@ -439,7 +502,8 @@ class MainWindowBuilder():
         self.buildAppIndicator()
         
         #Setup Timer
-        self.breakScheduler = BreakScheduler(self, 1, "popup")
+        self.intervalSecs = 20
+        self.breakScheduler = BreakScheduler(self, self.intervalSecs, "popup")
         
         self.window.connect("destroy", self.hideOnClose)
         self.window.hide()
@@ -449,6 +513,7 @@ class MainWindowBuilder():
         
     def showConfigureWindow(self, widget=None):
         self.window.show_all()
+        
         
     def buildAppIndicator(self):
         self.appInd = appindicator.Indicator.new("MyApp", "", appindicator.IndicatorCategory.APPLICATION_STATUS)
@@ -523,6 +588,9 @@ class Helper:
         
     def getBreakScheduler(self):
         return self.mainWindow.breakScheduler
+    
+    def updateConfig(self, c):
+        self.mainWindow.config = c
 #end class Helper
 
 if __name__ == "__main__":
