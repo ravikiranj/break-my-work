@@ -2,8 +2,15 @@
 
 import sys
 import os
+import time
 try:
-    from gi.repository import Gtk, Pango, AppIndicator3 as appindicator, GdkPixbuf
+    import threading 
+    from threading import Timer
+except:
+    print "Multi-threaded environment is required to run 'Break My Work'"
+
+try:
+    from gi.repository import Gtk, Pango, AppIndicator3 as appindicator, GdkPixbuf, GLib, Gdk
 except:
     print "Could not GTK3 libraries"
     sys.exit(1)
@@ -356,6 +363,7 @@ class UI:
     def saveChangesHandler(self, btn, name, helper):
         if(name == "Ok"):
             print "Ok Button"
+            helper.getBreakScheduler().setNewInterval(5)
             helper.hideOnClose() 
         elif(name == "Apply"):
             print "Apply Button"
@@ -384,7 +392,39 @@ class UI:
         return self.noteBook
 #end class UI
 
-class MainWindowBuilder:
+class BreakScheduler(object):
+    def __init__(self, window, interval, action):
+        self.mainWindow = window
+        self._timer = 0
+        self.interval = interval
+        self.action = action
+        self.isRunning = False
+        self.start()
+
+    def setNewInterval(self, newInterval):
+        self.stop()
+        self.interval = newInterval
+        self.start()
+        
+    def setNewAction(self, newAction):
+        self.action = newAction
+        
+    def showBreakMessageUI(self, action):
+        print "Action = %s, Interval = %d" % (self.action, self.interval)
+        return True
+        
+    def start(self):
+        if not self.isRunning:
+            self._timer = GLib.timeout_add_seconds(self.interval, self.showBreakMessageUI, self.action)
+            self.isRunning = True
+
+    def stop(self):
+        if(self._timer > 0):
+            GLib.source_remove(self._timer)
+        self.isRunning = False
+#end BreakScheduler
+
+class MainWindowBuilder():
     def __init__(self):
         #Create Window UI
         self.window = Gtk.Window()
@@ -398,13 +438,16 @@ class MainWindowBuilder:
         #Build App Indicator
         self.buildAppIndicator()
         
+        #Setup Timer
+        self.breakScheduler = BreakScheduler(self, 1, "popup")
+        
         self.window.connect("destroy", self.hideOnClose)
         self.window.hide()
         
     def rightClickOnStatus(self, icon, button, time):
         self.configMenu.show_all()
         
-    def showConfigureWindow(self, widget):
+    def showConfigureWindow(self, widget=None):
         self.window.show_all()
         
     def buildAppIndicator(self):
@@ -426,7 +469,7 @@ class MainWindowBuilder:
 
         self.configureItem.connect("activate", self.showConfigureWindow)
         self.aboutItem.connect("activate", self.showAboutDialog)
-        self.quitItem.connect("activate", Gtk.main_quit)
+        self.quitItem.connect("activate", self.cleanUp)
 
         self.configMenu.append(self.configureItem)
         self.configMenu.append(self.aboutItem)
@@ -436,6 +479,14 @@ class MainWindowBuilder:
         self.appInd.set_menu(self.configMenu)
         
         self.configMenu.show_all()
+        
+    def showBreakMessageUI(self, action):
+        print "test"
+        return True
+        
+    def cleanUp(self, widget):
+        self.breakScheduler.stop()
+        Gtk.main_quit()
         
     def showAboutDialog(self, widget):
         self.aboutDialog = Gtk.AboutDialog()
@@ -469,8 +520,15 @@ class Helper:
         
     def hideOnClose(self):
         self.mainWindow.window.hide()
+        
+    def getBreakScheduler(self):
+        return self.mainWindow.breakScheduler
 #end class Helper
 
 if __name__ == "__main__":
     mainWindow = MainWindowBuilder()
+    GLib.threads_init()
+    Gdk.threads_init()
+    Gdk.threads_enter()
     mainWindow.main()
+    Gdk.threads_leave()
