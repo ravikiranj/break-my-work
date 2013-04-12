@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import sys
+import os
 try:
-    from gi.repository import Gtk, Pango
+    from gi.repository import Gtk, Pango, AppIndicator3 as appindicator, GdkPixbuf
 except:
     print "Could not GTK3 libraries"
     sys.exit(1)
@@ -383,7 +384,7 @@ class UI:
         return self.noteBook
 #end class UI
 
-class Builder:
+class MainWindowBuilder:
     def __init__(self):
         #Create Window UI
         self.window = Gtk.Window()
@@ -392,51 +393,68 @@ class Builder:
         self.helper = Helper(self)
         self.ui = UI(self.helper)
         self.window.add(self.ui.getNoteBook())
+        self.window.set_position(Gtk.WindowPosition.CENTER)
         
-        #Status Icon
-        self.statusIcon = Gtk.StatusIcon()
-        self.statusIcon.set_from_stock(Gtk.STOCK_HOME)
-        self.statusIcon.connect("popup-menu", self.rightClickOnStatus)
+        #Build App Indicator
+        self.buildAppIndicator()
         
-        self.window.connect("destroy", lambda w: Gtk.main_quit())
-        self.window.show_all()
+        self.window.connect("destroy", self.hideOnClose)
+        self.window.hide()
         
     def rightClickOnStatus(self, icon, button, time):
-        self.menu = Gtk.Menu()
-
-        aboutItem = Gtk.MenuItem()
-        aboutItem.set_label("About")
-        quitItem = Gtk.MenuItem()
-        quitItem.set_label("Quit")
-
-        aboutItem.connect("activate", self.show_about_dialog)
-        quitItem.connect("activate", Gtk.main_quit)
-
-        self.menu.append(aboutItem)
-        self.menu.append(quitItem)
-
-        self.menu.show_all() 
+        self.configMenu.show_all()
         
-        def pos(menu, icon):
-                return (Gtk.StatusIcon.position_menu(menu, icon))
-            
-        self.menu.popup(None, None, pos, self.statusicon, button, time) 
+    def showConfigureWindow(self, widget):
+        self.window.show_all()
         
-    def show_about_dialog(self, widget):
-        about_dialog = Gtk.AboutDialog()
+    def buildAppIndicator(self):
+        self.appInd = appindicator.Indicator.new("MyApp", "", appindicator.IndicatorCategory.APPLICATION_STATUS)
+        self.appInd.set_status (appindicator.IndicatorStatus.ACTIVE)
+        self.currDir = os.getcwd()
+        self.appInd.set_icon_theme_path(self.currDir);
+        self.iconName = "theicon"
+        self.appInd.set_icon(self.iconName)
+        self.configMenu = Gtk.Menu()
 
-        about_dialog.set_destroy_with_parent(True)
-        about_dialog.set_name("Break My Work")
-        about_dialog.set_version("1.0")
-        about_dialog.set_authors(["Ravikiran Janardhana"])
+        self.configureItem = Gtk.MenuItem()
+        self.configureItem.set_label("Configure")
+        self.aboutItem = Gtk.MenuItem()
+        self.aboutItem.set_label("About")
+        self.menuSeparator1 = Gtk.SeparatorMenuItem()
+        self.quitItem = Gtk.MenuItem()
+        self.quitItem.set_label("Quit")
 
-        about_dialog.run()
-        about_dialog.destroy()
+        self.configureItem.connect("activate", self.showConfigureWindow)
+        self.aboutItem.connect("activate", self.showAboutDialog)
+        self.quitItem.connect("activate", Gtk.main_quit)
+
+        self.configMenu.append(self.configureItem)
+        self.configMenu.append(self.aboutItem)
+        self.configMenu.append(self.menuSeparator1)
+        self.configMenu.append(self.quitItem)
         
-    def hideOnClose(self):
-        self.window.hide_on_delete()
-        self.statusIcon.set_tooltip_text('Window is hidden')
-        return True
+        self.appInd.set_menu(self.configMenu)
+        
+        self.configMenu.show_all()
+        
+    def showAboutDialog(self, widget):
+        self.aboutDialog = Gtk.AboutDialog()
+
+        self.aboutDialog.set_program_name("Break My Work")
+        self.aboutDialog.set_version("1.0")
+        self.aboutDialog.set_comments("Break My Work is a simple Repetitive Strain Injury Prevention Software.")
+        self.aboutDialog.set_destroy_with_parent(True)
+        self.logoIcon = GdkPixbuf.Pixbuf.new_from_file_at_size("theicon.png", 32, 32)
+        self.aboutDialog.set_logo(self.logoIcon)
+        self.webUrl = "http://www.ravikiranj.net"
+        self.aboutDialog.set_website(self.webUrl)
+        self.aboutDialog.set_authors(["Ravikiran Janardhana"])
+
+        self.aboutDialog.run()
+        self.aboutDialog.destroy()
+        
+    def hideOnClose(self, widget=None):
+        self.window.hide()
         
     def getWindow(self):
         return self.window
@@ -446,15 +464,13 @@ class Builder:
 #end class Builder
 
 class Helper:
-    def __init__(self, builder):
-        self.b = builder
+    def __init__(self, mainWindow):
+        self.mainWindow = mainWindow
         
     def hideOnClose(self):
-        self.b.window.hide_on_delete()
-        self.statusIcon.set_tooltip_text('Window is hidden')
-        return True
+        self.mainWindow.window.hide()
 #end class Helper
 
 if __name__ == "__main__":
-    b = Builder()
-    b.main()
+    mainWindow = MainWindowBuilder()
+    mainWindow.main()

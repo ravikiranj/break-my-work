@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 from gi.repository import AppIndicator3 as appindicator, Gtk
+import os
 
 def show_about_dialog(widget):
     about_dialog = Gtk.AboutDialog()
@@ -17,16 +18,10 @@ def menuitem_response(w, buf):
     print buf
 
 if __name__ == "__main__":
-    """
-    ind = appindicator.Indicator.new_with_path (
-                          "sample",
-                          "indicator-messages",
-                          appindicator.IndicatorCategory.APPLICATION_STATUS,
-                          "./png-icon.png")
-                          """
     ind = appindicator.Indicator.new("MyApp", "utilities-terminal", appindicator.IndicatorCategory.APPLICATION_STATUS)
     ind.set_status (appindicator.IndicatorStatus.ACTIVE)
-    ind.set_icon_theme_path("/home/ravikirn/workspace/BreakMyWork/bmw");
+    currDir = os.getcwd()
+    ind.set_icon_theme_path(currDir);
     ind.set_icon("theicon")
     
     # create a menu
