@@ -10,6 +10,6 @@ Homepage: https://launchpad.net/~ravikiran-j/+archive/ppa
 
 Package: breakmywork
 Architecture: all
-Depends: python-gtk2, python-appindicator, python-gi, ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
+Depends: python-gtk2, python-appindicator, python-gi, ${misc:Depends}, ${python:Depends}
 Description: Break My Work is a simple RSI Prevention Software
  Break My Work reminds the user to take short breaks while working long hours in front of a computer
