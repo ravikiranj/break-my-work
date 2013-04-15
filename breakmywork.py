@@ -1,14 +1,22 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-import sys
+from os.path import expanduser
 import os
 import pickle
-from os.path import expanduser
+import sys
+
+#global debug
+DEBUG = 0
+
+def debugLog(debugStr):
+    if(DEBUG):
+        print debugStr
+#end debugLog
 
 try:
     from gi.repository import Gtk, Pango, AppIndicator3 as appindicator, GdkPixbuf, GLib
 except:
-    print "Could not GTK3 libraries"
+    print "Could not GTK3 libraries, exiting now"
     sys.exit(1)
     
 class UI:
@@ -344,7 +352,7 @@ class UI:
             self.enableApplyCancelBtns()
             
         if(newInterval != -1):
-            print "Activate Short Break Timer every %d minutes" % (newInterval)
+            debugLog("Activate Short Break Timer every %d minutes" % (newInterval))
             self.tempConfig['interval'] = newInterval
             if(newIntervalName != ""):
                 self.tempConfig['intervalName'] = newIntervalName
@@ -355,13 +363,13 @@ class UI:
             #enable short breaks
             self.shortTimerChoiceBox.set_sensitive(True)
             self.shortActionChoiceBox.set_sensitive(True)
-            print "Enable short breaks"
+            debugLog("Enable Short Breaks")
             self.tempConfig['enableBreaks'] = True
         else:
             #disable short breaks
             self.shortTimerChoiceBox.set_sensitive(False)
             self.shortActionChoiceBox.set_sensitive(False)
-            print "Disable short breaks"
+            debugLog("Disable Short Breaks")
             self.tempConfig['enableBreaks'] = False
         return True
             
@@ -392,7 +400,7 @@ class UI:
     
     def updateShortBreakDuration(self, btn):
         newDuration = self.shortBreakDurationBtn.get_value_as_int()
-        print "Short Break Duration =  ", newDuration, " mins"
+        debugLog("Short Break Duration =  %d mins" % (newDuration))
         self.tempConfig['duration'] = newDuration
         return True
         
@@ -416,7 +424,7 @@ class UI:
                 self.enableApplyCancelBtns()
                 
         if(newAction != ""):
-            print "Action changed = %s" % (newAction)
+            debugLog("Action changed = %s" % (newAction))
             self.tempConfig['actionType'] = newAction
         return True
         
@@ -452,10 +460,10 @@ class UI:
         
     def saveChangesHandler(self, btn, name):
         if(name == "Ok"):
-            print "Ok Button"
+            debugLog("Ok Button")
             self.h.hideOnClose()
         elif(name == "Apply"):
-            print "Apply Button"
+            debugLog("Apply Button")
             self.c = self.tempConfig
             #Copy tempConfig to config and write it to config file
             self.h.updateConfig(self.tempConfig)
@@ -465,19 +473,19 @@ class UI:
             if(self.c['enableBreaks']):
                 self.h.mainWindow.stopTimers()
                 self.h.mainWindow.startTimers()
-                print "Breaks Enabled, so restarting timers"
+                debugLog("Breaks Enabled, so restarting timers")
             else:
                 self.h.mainWindow.stopTimers()
                 self.h.mainWindow.appInd.set_label("", "")
-                print "Breaks Disabled, canceling all timers"
+                debugLog("Breaks Disabled, canceling all timers")
             if(self.c['startup']):
                 self.h.mainWindow.addAppToStartup()
             else:
                 self.h.mainWindow.removeAppFromStartup()
-            print "Changes saved to file"
+            debugLog("Changes saved to file")
             self.disableApplyCancelBtns()
         elif(name == "Cancel"):
-            print "Cancel Button"
+            debugLog("Cancel Button")
             self.tempConfig = {'duration' : self.c['duration'], 
                                'interval' : self.c['interval'], 
                                'intervalName' : self.c['intervalName'], 
@@ -578,7 +586,7 @@ class BreakScheduler(object):
         self.breakMessageWindow.set_border_width(15)
         self.breakMessageWindow.show_all()
         
-        print "Action = %s, Interval = %d" % (self.action, self.interval)
+        debugLog("Action = %s, Interval = %d" % (self.action, self.interval))
         
         return True
         
@@ -606,7 +614,7 @@ class BreakScheduler(object):
             self.timerEnd = self.timerStart + self.interval
             self._labelTimer = GLib.timeout_add_seconds(self.labelInterval, self.updateAppLabel)
             #Call immediately to update the appLabel
-            print "Trying to update app label first time"
+            debugLog("Trying to update app label first time")
             self.updateAppLabel()
             self.isRunning = True
 
@@ -619,7 +627,7 @@ class BreakScheduler(object):
         
     def updateAppLabel(self):
         self.currTime = GLib.get_current_time()
-        print "Inside UpdateAppLabel, currTime = %d, timerStart = %d, timerEnd = %d" % (self.currTime, self.timerStart, self.timerEnd)
+        debugLog("Inside UpdateAppLabel, currTime = %d, timerStart = %d, timerEnd = %d" % (self.currTime, self.timerStart, self.timerEnd))
         if(self.currTime < self.timerEnd):
             if(self.minuteMode):
                 diff = int((self.timerEnd - self.currTime) / 60)
@@ -632,6 +640,9 @@ class BreakScheduler(object):
 
 class MainWindowBuilder():
     def __init__(self):
+        #load all config paths
+        self.loadAllPaths()
+        
         #Create Window UI
         self.window = Gtk.Window()
         self.window.set_resizable(False)
@@ -642,7 +653,7 @@ class MainWindowBuilder():
         
         #setup config
         self.config = self.loadConfig()
-        print self.config
+        debugLog("Loaded config = %s" % self.config)
         
         #setup ui
         self.ui = UI(self.helper, self.config)
@@ -661,10 +672,30 @@ class MainWindowBuilder():
             self.config['firstRun'] = False
             self.writeNewConfigToFile()
             self.addAppToStartup()
-            print self.config
         else:
             self.window.hide()
         
+    def loadAllPaths(self):
+        #Home Dir
+        self.homeDir = expanduser("~")
+        
+        #Curr Dir
+        self.currDir = os.getcwd()
+        
+        #Config dir
+        self.configDir = self.homeDir + "/.breakmywork/config"
+        self.configFilePath = self.configDir + "/breakmywork.pickle"
+        
+        #AutoStart Dirs 
+        self.autoStartDestDir = self.homeDir + "/.config/autostart/"
+        self.autoStartDestFilePath = self.autoStartDestDir + "break-my-work.desktop"
+        
+        #App Icon
+        self.appIconDir = "/usr/share/breakmywork/images"
+        self.appIconName = "breakicon"
+        self.appIconPath = self.appIconDir + "/breakicon.png"
+        
+         
     def hideOnClose(self, widget=None, event=None):
         self.window.hide()
         return True
@@ -685,48 +716,43 @@ class MainWindowBuilder():
                               'startup' : True}
         self.currConfig = None
         #Check if a config directory exists
-        self.homeDir = expanduser("~")
-        self.bmwConfigDir = self.homeDir + "/breakMyWork"
-        self.bmwConfigFile = self.bmwConfigDir + "/bmwConfig.pickle"
-        if(os.path.isdir(self.bmwConfigDir)):
-            if(os.path.isfile(self.bmwConfigFile)):
+        if(os.path.isdir(self.configDir)):
+            if(os.path.isfile(self.configFilePath)):
                 #Load existing config
-                print "Loaded existing config"
+                debugLog("Loaded existing config")
                 try:
-                    self.currConfig = pickle.load(open(self.bmwConfigFile, "rb"))
+                    self.currConfig = pickle.load(open(self.configFilePath, "rb"))
                 except IOError as e:
                     print "Exception error is : %s " % (e)
             else:
                 #Create a new default config
-                print "Created a new default config file"
+                debugLog("Created a new default config file")
                 self.currConfig = self.defaultConfig
                 try:
-                    pickle.dump(self.currConfig, open(self.bmwConfigFile, "rb"))
+                    pickle.dump(self.currConfig, open(self.configFilePath, "rb"))
                 except IOError as e:
                     print "Exception error is : %s " % (e)
         else:
             #Created a new config directory and file
             self.currConfig = self.defaultConfig
-            print "Created a new config directory and file"
-            os.makedirs(self.bmwConfigDir)
+            debugLog("Created a new config directory and file")
+            os.makedirs(self.configDir)
             try:
-                pickle.dump(self.currConfig, open(self.bmwConfigFile, "wb"))
+                pickle.dump(self.currConfig, open(self.configFilePath, "wb"))
             except IOError as e:
                 print "Exception error is : %s " % (e)
                 
         return self.currConfig
     
     def writeNewConfigToFile(self):
-        self.bmwConfigDir = self.homeDir + "/breakMyWork"
-        self.bmwConfigFile = self.bmwConfigDir + "/bmwConfig.pickle"
         #Create the config directory if it does not exist
-        if(not os.path.isdir(self.bmwConfigDir)):
-            os.makedirs(self.bmwConfigDir)
+        if(not os.path.isdir(self.configDir)):
+            os.makedirs(self.configDir)
             
         #Overwrite the config file
-        print "Overwrite Config File"
+        debugLog("Overwrite Config File")
         try:
-            pickle.dump(self.config, open(self.bmwConfigFile, "wb"))
+            pickle.dump(self.config, open(self.configFilePath, "wb"))
         except IOError as e:
             print "Exception error is : %s " % (e)
                 
@@ -735,12 +761,8 @@ class MainWindowBuilder():
     def buildAppIndicator(self):
         self.appInd = appindicator.Indicator.new("MyApp", "", appindicator.IndicatorCategory.APPLICATION_STATUS)
         self.appInd.set_status (appindicator.IndicatorStatus.ACTIVE)
-        self.homeDir = expanduser("~")
-        self.appIconDir = self.homeDir+"/workspace/BreakMyWork/bmw"
-        print self.appIconDir
         self.appInd.set_icon_theme_path(self.appIconDir);
-        self.iconName = "theicon"
-        self.appInd.set_icon(self.iconName)
+        self.appInd.set_icon(self.appIconName)
         self.configMenu = Gtk.Menu()
 
         self.configureItem = Gtk.MenuItem()
@@ -764,10 +786,6 @@ class MainWindowBuilder():
         
         self.configMenu.show_all()
         
-    def showBreakMessageUI(self, action):
-        print "test"
-        return True
-        
     def cleanUp(self, widget):
         self.breakScheduler.stop()
         Gtk.main_quit()
@@ -779,7 +797,7 @@ class MainWindowBuilder():
         self.aboutDialog.set_version("1.0")
         self.aboutDialog.set_comments("Break My Work is a simple Repetitive Strain Injury Prevention Software.")
         self.aboutDialog.set_destroy_with_parent(True)
-        self.logoIcon = GdkPixbuf.Pixbuf.new_from_file_at_size("theicon.png", 32, 32)
+        self.logoIcon = GdkPixbuf.Pixbuf.new_from_file_at_size(self.appIconPath, 32, 32)
         self.aboutDialog.set_logo(self.logoIcon)
         self.webUrl = "http://www.ravikiranj.net"
         self.aboutDialog.set_website(self.webUrl)
@@ -791,15 +809,17 @@ class MainWindowBuilder():
     def updateAppIndicatorLabelInMins(self, mins):
         hours = int(mins / 60)
         minutes = mins % 60
-        labelStr = "(" + str(hours).rjust(2, '0')+ ":" + str(minutes).rjust(2, '0') + ")"
-        print "Updated app label = %s" % (labelStr)
+        labelStr = " (" + str(hours).rjust(2, '0')+ ":" + str(minutes).rjust(2, '0') + ")"
+        debugLog("Updated app label = %s" % (labelStr))
+        self.appInd.set_status (appindicator.IndicatorStatus.ATTENTION)
         self.appInd.set_label(labelStr, "")
 
     def updateAppIndicatorLabelInSecs(self, secs):
         minutes = int(secs / 60)
         seconds = secs % 60
-        labelStr = "(" + str(minutes).rjust(2, '0')+ ":" + str(seconds).rjust(2, '0') + ")"
-        print "Updated app label = %s" % (labelStr)
+        labelStr = " (" + str(minutes).rjust(2, '0')+ ":" + str(seconds).rjust(2, '0') + ")"
+        debugLog("Updated app label = %s" % (labelStr))
+        self.appInd.set_status (appindicator.IndicatorStatus.ATTENTION)
         self.appInd.set_label(labelStr, "")
         
     def stopTimers(self):    
@@ -812,30 +832,28 @@ class MainWindowBuilder():
         self.desktopFileStr = """
 [Desktop Entry]
 Type=Application
-Exec=python /home/ravikirn/workspace/BreakMyWork/bmw/BreakMyWork.py
+Exec=breakmywork
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 Name[en_US]=Break My Work
 Name=Break My Work
-Comment[en_US]=
-Comment="""
-        self.desktopFilePath = self.homeDir + "/.config/autostart/"
-        self.desktopFileName = self.desktopFilePath + "break-my-work.desktop"
-        print self.desktopFileName
+Comment[en_US]=Break My Work is an RSI Prevention Software
+Comment=Break My Work is an RSI Prevention Software
+"""
         try:
-            self.desktopFileHandle = open(self.desktopFileName, "w")
-            self.desktopFileHandle.write(self.desktopFileStr)
-            self.desktopFileHandle.close()
+            self.autoStartFileHandle = open(self.autoStartDestFilePath, "w")
+            self.autoStartFileHandle.write(self.desktopFileStr)
+            self.autoStartFileHandle.close()
         except IOError as e:
-            print "here"
             print "Exception error is : %s " % (e)
             
     def removeAppFromStartup(self):
-        self.desktopFilePath = self.homeDir + "/.config/autostart/"
-        self.desktopFileName = self.desktopFilePath + "break-my-work.desktop"
-        if(os.path.isfile(self.desktopFileName)):
-            os.remove(self.desktopFileName)
+        try:
+            if(os.path.isfile(self.autoStartDestFilePath)):
+                os.remove(self.autoStartDestFilePath)
+        except IOError as e:
+            print "Exception error is : %s " % (e)
         
     def getWindow(self):
         return self.window
