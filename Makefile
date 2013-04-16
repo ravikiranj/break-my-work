@@ -10,6 +10,7 @@ install:
 		cp breakmywork.py $(BASEDIR)
 		chmod 755 $(BASEDIR)/breakmywork.py
 		cp images/breakicon.png $(IMGDIR)
+		cp images/deskStretches.jpg $(IMGDIR)
 		ln -s $(BASEDIR)/breakmywork.py $(BINDIR)/breakmywork
 		chmod 755 $(BINDIR)/breakmywork
 uninstall:

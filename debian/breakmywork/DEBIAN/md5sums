@@ -1,6 +1,7 @@
-5ac4164072a1e794bf6243dd3ab96b19  usr/share/breakmywork/breakmywork.py
+0d4b3caf69a651b3da6cd51db98bcce9  usr/share/breakmywork/breakmywork.py
 4218dcb9eb0817baed8d74a4cc2a888e  usr/share/breakmywork/images/breakicon.png
+36ecdd5546b0b0d82d0a12e190aee9b2  usr/share/breakmywork/images/deskStretches.jpg
 eac86bd95041535c0220910a078a72a7  usr/share/doc/breakmywork/README
-af47db895a48d60e48673f0db14c50f5  usr/share/doc/breakmywork/changelog.Debian
+7fe7c2dee5adefba5da63f8fccdd6a59  usr/share/doc/breakmywork/changelog
 1f4ae6434f3d3b3d6a65cf7681db74f9  usr/share/doc/breakmywork/copyright
 a1349dba4d429a62f1b4795af0562509  usr/share/python/runtime.d/breakmywork.rtupdate

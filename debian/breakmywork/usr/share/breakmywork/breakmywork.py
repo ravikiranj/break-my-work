@@ -440,7 +440,7 @@ class UI:
         
         #Image
         self.exerImage = Gtk.Image()
-        self.exerImagePath = "deskStretches.jpg"
+        self.exerImagePath = self.h.getExerImagePath()
         self.exerImage.set_from_file(self.exerImagePath)
         self.exerImageBtn = Gtk.Button()
         self.exerImageBtn.set_sensitive(False)
@@ -691,10 +691,12 @@ class MainWindowBuilder():
         self.autoStartDestFilePath = self.autoStartDestDir + "break-my-work.desktop"
         
         #App Icon
-        self.appIconDir = "/usr/share/breakmywork/images"
+        self.imageDir = "/usr/share/breakmywork/images"
         self.appIconName = "breakicon"
-        self.appIconPath = self.appIconDir + "/breakicon.png"
+        self.appIconPath = self.imageDir + "/breakicon.png"
         
+        #Exercise Image Path        
+        self.exerImagePath = self.imageDir + "/deskStretches.jpg"
          
     def hideOnClose(self, widget=None, event=None):
         self.window.hide()
@@ -761,6 +763,7 @@ class MainWindowBuilder():
     def buildAppIndicator(self):
         self.appInd = appindicator.Indicator.new("MyApp", "", appindicator.IndicatorCategory.APPLICATION_STATUS)
         self.appInd.set_status (appindicator.IndicatorStatus.ACTIVE)
+        self.appIconDir = self.imageDir
         self.appInd.set_icon_theme_path(self.appIconDir);
         self.appInd.set_icon(self.appIconName)
         self.configMenu = Gtk.Menu()
@@ -878,6 +881,9 @@ class Helper:
         
     def writeNewConfig(self):
         self.mainWindow.writeNewConfigToFile()
+        
+    def getExerImagePath(self):
+        return self.mainWindow.exerImagePath
 #end class Helper
 
 if __name__ == "__main__":

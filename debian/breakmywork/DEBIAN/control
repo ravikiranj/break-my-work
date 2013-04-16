@@ -1,9 +1,9 @@
 Package: breakmywork
-Version: 1.0-1
+Version: 1.0
 Architecture: all
 Maintainer: Ravikiran Janardhana <ravikiran.j.127@gmail.com>
-Installed-Size: 88
-Depends: python-gtk2, python-appindicator, python-gi, python (>= 2.7.1-0ubuntu2)
+Installed-Size: 166
+Depends: python-gtk2, python-appindicator, python-gi, gir1.2-glib-2.0, gir1.2-gtk-3.0, python (>= 2.7.1-0ubuntu2)
 Section: python
 Priority: extra
 Homepage: https://launchpad.net/~ravikiran-j/+archive/ppa
