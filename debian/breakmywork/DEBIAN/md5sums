@@ -2,6 +2,7 @@
 4218dcb9eb0817baed8d74a4cc2a888e  usr/share/breakmywork/images/breakicon.png
 36ecdd5546b0b0d82d0a12e190aee9b2  usr/share/breakmywork/images/deskStretches.jpg
 eac86bd95041535c0220910a078a72a7  usr/share/doc/breakmywork/README
-7fe7c2dee5adefba5da63f8fccdd6a59  usr/share/doc/breakmywork/changelog
-1f4ae6434f3d3b3d6a65cf7681db74f9  usr/share/doc/breakmywork/copyright
+a32d5f58785bda5849f0967400c8e46b  usr/share/doc/breakmywork/changelog.Debian.gz
+879c04df26d0f97020c623ba2382f2a8  usr/share/doc/breakmywork/copyright
+557020cbce3f8c592cffca5eed1dfd97  usr/share/man/man1/breakmywork.1.gz
 a1349dba4d429a62f1b4795af0562509  usr/share/python/runtime.d/breakmywork.rtupdate

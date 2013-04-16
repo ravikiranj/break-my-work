@@ -5,6 +5,8 @@ configure-stamp:
 		dh_testdir
 		touch configure-stamp
 build: build-stamp
+build-arch: build
+build-indep: build
 build-stamp: configure-stamp
 		dh_testdir
 		$(MAKE)
@@ -26,6 +28,8 @@ binary-indep: build install
 		dh_testdir
 		dh_testroot
 		dh_installchangelogs
+		dh_installman
+		dh_compress
 		dh_installdocs
 		dh_installexamples
 		dh_python2
