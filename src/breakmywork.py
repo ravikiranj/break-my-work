@@ -282,7 +282,7 @@ class UI:
         
         #OK Button
         self.timerOKBtn = Gtk.Button()
-        self.timerOKBtn.set_label("Ok")
+        self.timerOKBtn.set_label("OK")
         self.timerOKBtn.set_size_request(90, 30)
         self.timerOKBtn.connect("clicked", self.saveChangesHandler, "Ok")
         self.saveChangesBox.pack_start(self.timerOKBtn, True, True, 0)
@@ -549,22 +549,26 @@ class BreakScheduler(object):
         
         #Show UI
         self.breakMessageWindow = Gtk.Window()
+        self.breakMessageWindow.set_resizable(False)
         self.breakMessageWindow.set_position(Gtk.WindowPosition.CENTER)
         self.breakMessageWindow.set_size_request(375, 100)
         
         self.breakBox = Gtk.Box()
         self.breakBox.set_orientation(Gtk.Orientation.VERTICAL)
         
-        self.breakReminderText = "Please take a break of %d mins, it will help you avoid RSI Injuries." % (self.getDuration())
+        self.breakReminderText = "Please take a break of 2-5 mins, it will help you avoid RSI Injuries."
         self.breakReminderLabel = Gtk.Label(self.breakReminderText)
-        #self.breakReminderLabel.modify_font(self.mainWindow.ui.getFont("heading"))
+        self.breakReminderLabel.modify_font(self.mainWindow.ui.getFont("heading"))
         
         self.breakActionBox = Gtk.Box()
+        self.breakActionBox.set_margin_top(10)
         self.breakActionBox.set_orientation(Gtk.Orientation.HORIZONTAL)
         
         self.breakOkBtn = Gtk.Button()
-        self.breakOkBtn.set_label("Ok")
-        self.breakOkBtn.set_size_request(70, 30)
+        self.breakOkBtn.set_label("OK")
+        self.breakOkBtn.modify_font(self.mainWindow.ui.getFont("heading"))
+        self.breakOkBtn.set_size_request(60, 30)
+        self.breakOkBtn.set_margin_left(140)
         self.breakOkBtn.connect("clicked", lambda w: self.breakMessageWindow.destroy())
         
         self.exerciseBtnText = "Show me some Exercises"
@@ -572,6 +576,7 @@ class BreakScheduler(object):
         self.exerciseBtn.set_label(self.exerciseBtnText)
         self.exerciseBtn.set_margin_left(5)
         self.exerciseBtn.set_size_request(200, 30)
+        self.exerciseBtn.modify_font(self.mainWindow.ui.getFont("heading"))
         self.exerciseBtn.connect("clicked", self.showExerciseTab)
         
         self.breakActionBox.pack_start(self.breakOkBtn, False, False, 0)

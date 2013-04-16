@@ -1,0 +1,16 @@
+1) Remove any old .gz files
+rm ../*.gz
+
+2) Create a debian directory with default files and create a tar ball of source files
+dh_make --createorig
+
+3) For creating source packages with the GPG signed key enter below command,
+debuild -S -k <GPG_Key>
+
+4) For creating deb binaries to test and install on your system enter below command,
+debuild
+
+5) Make sure lintian does not complain about any errors or warnings
+
+6) To upload packages to the launchpad use below command
+dput ppa:<launchpad_id>/<ppa_name> <file.changes>
