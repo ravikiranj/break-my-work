@@ -4,6 +4,7 @@ from os.path import expanduser
 import os
 import pickle
 import sys
+import copy
 
 #global debug
 DEBUG = 0
@@ -24,14 +25,7 @@ class UI:
         self.noteBook = Gtk.Notebook()
         self.h = helper
         self.c = config
-        self.tempConfig = {'duration' : config['duration'], 
-                           'interval' : config['interval'], 
-                           'intervalName' : config['intervalName'],
-                           'actionType' : config['actionType'],
-                           'firstRun' : config['firstRun'],
-                           'enableBreaks' : config['enableBreaks'],
-                           'startup' : config['startup']
-                          }
+        self.tempConfig = copy.deepcopy(config)
         pageStrs = ["Timer", "Exercises"]
         for index in range(len(pageStrs)):
             tabLabel = Gtk.Label(pageStrs[index])
@@ -458,42 +452,45 @@ class UI:
         self.setMargin(self.disclaimerFrame, "10 0 0 5")
         tabGrid.attach_next_to(self.disclaimerFrame, self.exerScrollWindow, Gtk.PositionType.BOTTOM, 1, 1)
         
+    def saveSettings(self):
+        #Save tempConfig to c
+        self.c = self.tempConfig
+        #Copy tempConfig to config and write it to config file
+        self.h.updateConfig(self.tempConfig)
+        #Load newConfig to the UI (redundant)
+        self.loadConfigToUI()
+        #Stop old timers and start new timers based on new config
+        if(self.c['enableBreaks']):
+            self.h.mainWindow.stopTimers()
+            self.h.mainWindow.startTimers()
+            debugLog("Breaks Enabled, so restarting timers")
+        else:
+            self.h.mainWindow.stopTimers()
+            self.h.mainWindow.appInd.set_label("", "")
+            debugLog("Breaks Disabled, canceling all timers")
+        if(self.c['startup']):
+            self.h.mainWindow.addAppToStartup()
+        else:
+            self.h.mainWindow.removeAppFromStartup()
+        
     def saveChangesHandler(self, btn, name):
         if(name == "Ok"):
             debugLog("Ok Button")
+            #Save settings if Apply button is enabled
+            if(self.timerApplyBtn.get_sensitive()):
+                self.saveSettings()
+                debugLog("Changes saved to file")
+            #Hide the config dialog    
             self.h.hideOnClose()
         elif(name == "Apply"):
             debugLog("Apply Button")
-            self.c = self.tempConfig
-            #Copy tempConfig to config and write it to config file
-            self.h.updateConfig(self.tempConfig)
-            #Load newConfig to the UI (redundant)
-            self.loadConfigToUI()
-            #Stop old timers and start new timers based on new config
-            if(self.c['enableBreaks']):
-                self.h.mainWindow.stopTimers()
-                self.h.mainWindow.startTimers()
-                debugLog("Breaks Enabled, so restarting timers")
-            else:
-                self.h.mainWindow.stopTimers()
-                self.h.mainWindow.appInd.set_label("", "")
-                debugLog("Breaks Disabled, canceling all timers")
-            if(self.c['startup']):
-                self.h.mainWindow.addAppToStartup()
-            else:
-                self.h.mainWindow.removeAppFromStartup()
+            self.saveSettings()
             debugLog("Changes saved to file")
             self.disableApplyCancelBtns()
         elif(name == "Cancel"):
             debugLog("Cancel Button")
-            self.tempConfig = {'duration' : self.c['duration'], 
-                               'interval' : self.c['interval'], 
-                               'intervalName' : self.c['intervalName'], 
-                               'actionType' : self.c['actionType'],
-                               'firstRun' : self.c['firstRun'],
-                               'enableBreaks' : self.c['enableBreaks'],
-                               'startup' : self.c['startup']
-                               }
+            #Restore tempConfig to c
+            self.tempConfig = copy.deepcopy(self.c)
             self.h.hideOnClose()
         return True
             
@@ -529,6 +526,8 @@ class BreakScheduler(object):
         self.action = action
         self.isRunning = False
         
+        self.isBreakMsgWindowDestroyed = True
+        
         self.start()
         
     def setNewInterval(self, newInterval):
@@ -543,12 +542,16 @@ class BreakScheduler(object):
         self.action = newAction
         
     def showBreakMessageUI(self, action):
+        #Destroy any previous break message windows
+        self.destroyBreakMsgWindow()
+            
         #Update Label Timer 
         self.timerStart = GLib.get_current_time()
         self.timerEnd = self.timerStart + self.interval
         
         #Show UI
         self.breakMessageWindow = Gtk.Window()
+        self.isBreakMsgWindowDestroyed = False
         self.breakMessageWindow.set_resizable(False)
         self.breakMessageWindow.set_position(Gtk.WindowPosition.CENTER)
         self.breakMessageWindow.set_size_request(375, 100)
@@ -569,7 +572,7 @@ class BreakScheduler(object):
         self.breakOkBtn.modify_font(self.mainWindow.ui.getFont("heading"))
         self.breakOkBtn.set_size_request(60, 30)
         self.breakOkBtn.set_margin_left(140)
-        self.breakOkBtn.connect("clicked", lambda w: self.breakMessageWindow.destroy())
+        self.breakOkBtn.connect("clicked", self.destroyBreakMsgWindow)
         
         self.exerciseBtnText = "Show me some Exercises"
         self.exerciseBtn = Gtk.Button()
@@ -594,6 +597,15 @@ class BreakScheduler(object):
         debugLog("Action = %s, Interval = %d" % (self.action, self.interval))
         
         return True
+        
+    def destroyBreakMsgWindow(self, widget = None):
+        try:
+            if(not self.isBreakMsgWindowDestroyed and isinstance(self.breakMessageWindow, Gtk.Window)):
+                self.breakMessageWindow.destroy()
+                self.isBreakMsgWindowDestroyed = True
+        except AttributeError:
+            #Do nothing (dummy)
+            debugLog("self.breakMessageWindow does not exist")
         
     def getDuration(self):
         return self.mainWindow.config['duration']

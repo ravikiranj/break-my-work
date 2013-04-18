@@ -11,8 +11,6 @@ install:
 		chmod 755 $(BASEDIR)/breakmywork.py
 		cp images/breakicon.png $(IMGDIR)
 		cp images/deskStretches.jpg $(IMGDIR)
-		ln -s /usr/share/breakmywork/breakmywork.py $(BINDIR)/breakmywork
-		chmod 755 $(BINDIR)/breakmywork
 uninstall:
 		rm -rf $(BASEDIR)
 		rm $(BINDIR)/breakmywork
