@@ -1,6 +1,5 @@
-breakmywork (1.2.2-ubuntu12.10) quantal; urgency=low
+breakmywork (1.3-ubuntu12.04) precise; urgency=low
 
-  * Fixed OK button to save changes and ensured only one break window exists
-    at a time (bug #1170402, bug #1170405)
+  * Bug 1275592 : Add custom break message feature
 
- -- Ravikiran Janardhana <ravikiran.j.127@gmail.com>  Mon, 15 Apr 2013 18:53:15 -0400
+ -- Ravikiran Janardhana <ravikiran.j.127@gmail.com>  Sun, 02 Feb 2014 20:48:15 -0400

@@ -1,16 +1,48 @@
-1) Remove any old .gz files
-rm ../*.gz
+README
+======
+1) Remove any old .gz files and create a new directory
+   * rm ../*.gz && rm ../*.tar.*
+   * mkdir -p /playpen/ubuntu-apps/breakmywork-1.3/ && cd /playpen/ubuntu-apps/breakmywork-1.3/
 
-2) Create a debian directory with default files and create a tar ball of source files
-dh_make --createorig
+2) Create a debian directory with default files and create a tar ball of source files ("single binary" if asked)
+   * dh_make -e ravikiran.j.127@gmail.com  --createorig
+
+3) Copy all the files under debian folder in this repo to the newly created debian folder by dh_make.
+Modify changelog to reflect the new build.
+   * cp ../debian/* /playpen/ubuntu-apps/breakmywork-1.3/debian
+
+4) Copy executables, Make files and images to debian directory
+   * cp README /playpen/ubuntu-apps/breakmywork-1.3/debian/ &&  cp README /playpen/ubuntu-apps/breakmywork-1.3
+   * cp Makefile breakmywork.py /playpen/ubuntu-apps/breakmywork-1.3/
+   * mkdir -p /playpen/ubuntu-apps/breakmywork-1.3/images/ && cp ../images/* /playpen/ubuntu-apps/breakmywork-1.3/images/
+   * echo 'images/breakicon.png' >> debian/source/include-binaries
+   * echo 'images/deskStretches.jpg' >> debian/source/include-binaries
+
+5) Create a tar ball of source files. Delete any previously created tar balls in the parent directory.
+   * rm ../*.gz; rm ../.*tar*
+   * dh_make -e ravikiran.j.127@gmail.com  --createorig
 
 3) For creating source packages with the GPG signed key enter below command,
-debuild -S -k <GPG_Key>
+   * debuild -S (with GPG/PGP keys added to your keychain)
+   * debuild -S -k <GPG_Key> (if you don't have GPG/PGP keys added to your keychain)
+
+See https://launchpad.net/~ravikiran-j/+editpgpkeys if you need to create new PGP/GPG keys
 
 4) For creating deb binaries to test and install on your system enter below command,
-debuild
+   * debuild
+   * sudo dpkg -i breakmywork-version.deb
+
+To remove installed package, use below command,
+   * sudo dpkg -r breakmywork
+
+Remember to delete all the binary packages and change files and run debuild -S again so that you upload the source to launchpad and not binaries.
 
 5) Make sure lintian does not complain about any errors or warnings
 
 6) To upload packages to the launchpad use below command
-dput ppa:<launchpad_id>/<ppa_name> <file.changes>
+   * dput ppa:<launchpad_id>/<ppa_name> <file.changes>
+   * dput ppa:ravikiran-j/break-my-work breakmywork_1.3-ubuntu12.04_source.changes
+
+Delete .upload file if you want to reupload to repo due to errors.
+
+7) New build details will be available at https://launchpad.net/~ravikiran-j/+archive/break-my-work and https://launchpad.net/~ravikiran-j/+archive/break-my-work/+builds?build_text=&build_state=all
